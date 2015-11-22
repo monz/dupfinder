@@ -35,7 +35,6 @@ func getChecksum(file *os.File) []byte {
     if err != nil {
         log.Fatal(err)
     }
-    //log.Println(n, "bytes copied")
     return hash.Sum(nil)
 }
 
@@ -60,34 +59,31 @@ func processFile(absoluteFilePath string, sums chan FileSum, worker chan int)  {
     worker <- 1
 }
 
+func appendDuplicate(checksum string, file string, collectedSums *map[string]*list.List)  {
+    // read md5 sum
+    fileList, ok := (*collectedSums)[checksum]
+    if ok {
+        // checksum alraydy in map
+        // add file to list
+        fileList.PushBack(file)
+    } else {
+        // new checksum found
+        // add file to a new list
+        fileList := list.New()
+        fileList.PushBack(file)
+        // add list to collectedSums
+        (*collectedSums)[checksum] = fileList
+    }
+}
+
 func collectSums(sums chan FileSum, quit chan bool, collectedSums *map[string]*list.List)  {
-    counter := 0
     //collectedSums := make(map[string]*list.List)
     for {
         select {
         case sum := <-sums:
-            // read md5 sum
-            counter += 1
-            //log.Printf("%x\n", sum.checksum)
-            //log.Println("collected sum", counter)
-
-            // // // add sum to collectedSums
             // check whether checksum is already in map
             stringSum := fmt.Sprintf("%x", sum.checksum)
-            fileList, ok := (*collectedSums)[stringSum]
-            if ok {
-                // checksum alraydy in map
-                // add file to list
-                fileList.PushBack(sum.file)
-            } else {
-                // new checksum found
-                // add file to a new list
-                fileList := list.New()
-                fileList.PushBack(sum.file)
-                // add list to collectedSums
-                (*collectedSums)[stringSum] = fileList
-            }
-            // // // FINISH add sum to collectedSums
+            appendDuplicate(stringSum, sum.file, collectedSums)
 
             // mark work as done
             wg.Done()
@@ -136,7 +132,6 @@ func main() {
             log.Println("ERROR", err)
             continue
         } else if (isDirectory) {
-            //log.Println("Skip directory:", file)
             continue
         }
         // else process file
