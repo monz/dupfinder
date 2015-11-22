@@ -6,6 +6,7 @@ import (
     "bufio"
     "io"
     "os"
+    "flag"
     "fmt"
     "log"
     "sync"
@@ -38,11 +39,14 @@ func getChecksum(file *os.File) []byte {
     return hash.Sum(nil)
 }
 
-func processFile(absoluteFilePath string, sums chan FileSum)  {
+func processFile(absoluteFilePath string, sums chan FileSum, worker chan int)  {
     // open file
     file, err := os.Open(absoluteFilePath)
     if err != nil {
-    	log.Fatal(err)
+        worker <- 1
+        wg.Done()
+    	log.Println(err)
+        return
     }
     defer file.Close()
     // calculate checksum
@@ -51,6 +55,9 @@ func processFile(absoluteFilePath string, sums chan FileSum)  {
     // send md5 sum
     fs := FileSum{absoluteFilePath, sum}
     sums <- fs
+
+    // release worker
+    worker <- 1
 }
 
 func collectSums(sums chan FileSum, quit chan bool, collectedSums *map[string]*list.List)  {
@@ -91,14 +98,36 @@ func collectSums(sums chan FileSum, quit chan bool, collectedSums *map[string]*l
     }
 }
 
+// read command line options
+var workerCount int
+func init() {
+    flag.IntVar(&workerCount, "w", 4, "count of parallel md5sum workers")
+}
+
 func main() {
+    flag.Parse()
+    log.Println("Worker count", workerCount)
+
+    // define worker count
+    MAX_WORKER := workerCount
+    worker := make(chan int, MAX_WORKER)
+    // init worker pool
+    for i := 0; i < MAX_WORKER; i++ {
+        worker <- 1
+    }
+
     // collector for checksums
     sums := make(chan FileSum)
+
+    // start checksum collector
+    quit := make(chan bool)
+    collectedSums := make(map[string]*list.List)
+    go collectSums(sums, quit, &collectedSums)
 
     // process all filenames read on stdin
     scanner := bufio.NewScanner(os.Stdin)
     for scanner.Scan() {
-        // show file currently processing
+        // get next file
         file := scanner.Text()
 
         // skip directories
@@ -107,17 +136,14 @@ func main() {
             log.Println("ERROR", err)
             continue
         } else if (isDirectory) {
-            log.Println("Skip directory:", file)
+            //log.Println("Skip directory:", file)
             continue
         }
         // else process file
+        <-worker
         wg.Add(1)
-        go processFile(file, sums)
+        go processFile(file, sums, worker)
     }
-    // collect all sums
-    quit := make(chan bool)
-    collectedSums := make(map[string]*list.List)
-    go collectSums(sums, quit, &collectedSums)
 
     // wait until all files sums are collected
     wg.Wait()
