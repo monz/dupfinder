@@ -6,9 +6,11 @@ After EOF is read, the summary is printed to stdout. The summary consists of a l
 filenames according to the checksum.
 
 # Options
-dupfinder takes one option, the worker count
+dupfinder takes some options
 
 ```
+-sumsOnly
+        if 'true', just output the checksums of all files (default 'false')
 -w int
     	count of parallel md5sum workers (default 4)
 ```
@@ -22,6 +24,14 @@ Use **10** md5sum workers
 ```
 $ find /var/tmp/ -printf "%p\n" | dupfinder -w 10 > duplicates.txt
 ```
+
+browse all files and subdirectories within `/var/tmp` and print the checksums of all files.
+Like the unix tool 'md5sum', but use **10** parallel workers.
+
+```
+$ find /var/tmp/ -printf "%p\n" | dupfinder -w 10 sumsOnly=true
+```
+
 
 ## Windows
 browse all files and subdirectories within `C:\tmp` and search for duplicate files. Save duplicates in a text file
@@ -41,4 +51,13 @@ Checksum d41d8cd98f00b204e9800998ecf8427e:
   /var/tmp/file3
   /var/tmp/file5
   /var/tmp/file6
+```
+
+```
+$ find /var/tmp/ -printf "%p\n" | dupfinder
+2016/01/27 18:24:04 Worker count 4
+8eea72e38a8c03d1932cb505a22c69c7  /var/tmp/file4
+5c219e4eef807cb8485e4795fa2ecd1b  /var/tmp/file1
+518dea85c42eb48d0db9a5486f9351cc  /var/tmp/file2
+38de3a8ad093febed8d7a2e63cdaae37  /var/tmp/file3
 ```
