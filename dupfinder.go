@@ -94,10 +94,32 @@ func collectSums(sums chan FileSum, quit chan bool, collectedSums *map[string]*l
     }
 }
 
+func printDuplicateFiles(collectedSums map[string]*list.List)  {
+    for checksum, files := range collectedSums {
+        // check if list contains duplicates
+        if files.Len() > 1 {
+            fmt.Printf("Checksum %s:\n", checksum)
+            for file := files.Front(); file != nil; file = file.Next() {
+                fmt.Println("\t", file.Value)
+            }
+        }
+    }
+}
+
+func printSumsOnly(collectedSums map[string]*list.List) {
+    for checksum, files := range collectedSums {
+        for file := files.Front(); file != nil; file = file.Next() {
+            fmt.Printf("%s  %s\n", checksum, file.Value)
+        }
+    }
+}
+
 // read command line options
 var workerCount int
+var sumsOnly bool
 func init() {
     flag.IntVar(&workerCount, "w", 4, "count of parallel md5sum workers")
+    flag.BoolVar(&sumsOnly, "sumsOnly", false, "if 'true', just output the checksums of all files")
 }
 
 func main() {
@@ -144,14 +166,10 @@ func main() {
     wg.Wait()
     quit <- true
 
-    // print duplicates
-    for checksum, files := range collectedSums {
-        // check if list contains duplicates
-        if files.Len() > 1 {
-            fmt.Printf("Checksum %s:\n", checksum)
-            for file := files.Front(); file != nil; file = file.Next() {
-                fmt.Println("\t", file.Value)
-            }
-        }
+    // output result
+    if sumsOnly {
+        printSumsOnly(collectedSums)
+    } else {
+        printDuplicateFiles(collectedSums)
     }
 }
