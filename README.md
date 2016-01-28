@@ -54,7 +54,7 @@ Checksum d41d8cd98f00b204e9800998ecf8427e:
 ```
 
 ```
-$ find /var/tmp/ -printf "%p\n" | dupfinder
+$ find /var/tmp/ -printf "%p\n" | dupfinder -sumsOnly
 2016/01/27 18:24:04 Worker count 4
 8eea72e38a8c03d1932cb505a22c69c7  /var/tmp/file4
 5c219e4eef807cb8485e4795fa2ecd1b  /var/tmp/file1
