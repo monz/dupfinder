@@ -10,7 +10,7 @@ dupfinder takes some options
 
 ```
 -sumsOnly
-        if 'true', just output the checksums of all files (default 'false')
+        just output the checksums of all files (default 'false')
 -w int
     	count of parallel md5sum workers (default 4)
 ```
@@ -29,7 +29,7 @@ browse all files and subdirectories within `/var/tmp` and print the checksums of
 Like the unix tool 'md5sum', but use **10** parallel workers.
 
 ```
-$ find /var/tmp/ -printf "%p\n" | dupfinder -w 10 sumsOnly=true
+$ find /var/tmp/ -printf "%p\n" | dupfinder -w 10 -sumsOnly
 ```
 
 
